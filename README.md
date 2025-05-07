@@ -1,6 +1,7 @@
 # MSD Analyzer
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 
 MSD Analyzer 是一款用于分析均方位移 (Mean Squared Displacement, MSD) 数据的桌面应用程序。它提供了友好的图形用户界面，帮助用户导入、处理、可视化 MSD 数据，并可能包含相关的物理模型拟合与参数提取功能。
 
@@ -9,13 +10,11 @@ MSD Analyzer 是一款用于分析均方位移 (Mean Squared Displacement, MSD) 
 - [MSD Analyzer](#msd-analyzer)
   - [📜 目录](#-目录)
   - [🚀 主要功能](#-主要功能)
-  - [✨ 截图](#-截图)
   - [🛠️ 技术栈](#️-技术栈)
   - [⚙️ 安装](#️-安装)
   - [▶️ 运行](#️-运行)
   - [📖 使用方法](#-使用方法)
   - [🚀 发布与打包](#-发布与打包)
-  - [🤝 如何贡献](#-如何贡献)
   - [📄 许可证](#-许可证)
 
 ## 🚀 主要功能
@@ -119,6 +118,6 @@ python main.py
 
 4.  打包成功后，可执行文件将位于项目根目录下的 `dist` 文件夹内 (通常是 `dist/MSD Analyzer/MSD Analyzer.exe` 或类似路径)。
 
-## 🤝 如何贡献
+## 📄 许可证
 
 本项目采用 [MIT 许可证](LICENSE)授权。
