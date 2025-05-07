@@ -1,0 +1,16 @@
+E:\Other\MSD Analyzer\
+├── main.py                # 主程序入口
+├── gui\
+│   ├── __init__.py
+│   ├── main_window.py     # 主窗口界面
+│   ├── plot_widget.py     # 绘图组件
+│   └── settings_panel.py  # 参数设置面板
+├── core\
+│   ├── __init__.py
+│   ├── data_loader.py     # 数据加载模块
+│   ├── msd_calculator.py  # MSD计算模块
+│   ├── fitting.py         # 拟合分析模块
+│   └── report_generator.py # 报告生成模块
+└── utils\
+    ├── __init__.py
+    └── helpers.py         # 辅助函数
