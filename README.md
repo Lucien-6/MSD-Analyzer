@@ -42,11 +42,9 @@ MSD Analyzer 是一款用于分析均方位移 (Mean Squared Displacement, MSD) 
 1.  **克隆仓库**
 
     ```bash
-    git clone <your-repository-url>
+    git clone https://github.com/Lucien-6/MSD-Analyzer.git
     cd MSD-Analyzer
     ```
-
-    _(请将 `<your-repository-url>` 替换为您的实际仓库 URL，并将 `MSD-Analyzer` 替换为您的项目文件夹名称，如果不同)_
 
 2.  **创建并激活虚拟环境 (推荐)**
 
@@ -103,9 +101,7 @@ python main.py
 
 为了方便使用，建议直接从本项目的 GitHub Releases 页面下载最新版本的预编译可执行文件。
 
-➡️ **[前往 Releases 页面](<your-repository-url>/releases)**
-
-_(请将 `<your-repository-url>` 替换为您的实际仓库 URL)_
+➡️ **[前往 Releases 页面](https://github.com/Lucien-6/MSD-Analyzer/releases)**
 
 下载后解压（如果需要），即可直接运行，无需安装 Python 或其他依赖。
 
