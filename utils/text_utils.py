@@ -24,6 +24,7 @@ def format_special_chars(text):
     # 先处理特殊单位组合
     unit_replacements = {
         'μm': r'$\mu$m',  # 使μ和m在同一数学环境中但保持m为正常字体
+        'μs': r'$\mu$s',  # 微秒单位的特殊处理
     }
     
     for unit, replacement in unit_replacements.items():
@@ -32,7 +33,7 @@ def format_special_chars(text):
     # 再处理单个特殊字符
     for char, replacement in replacements.items():
         # 避免重复替换已经处理过的单位中的字符
-        if char == 'μ' and 'μm' in text:
+        if char == 'μ' and ('μm' in text or 'μs' in text):
             continue
         text = text.replace(char, replacement)
     

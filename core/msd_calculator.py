@@ -1,9 +1,7 @@
 import numpy as np
 import pandas as pd
-from scipy.signal import savgol_filter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import multiprocessing
-import os
 
 class MSDCalculator:
     def __init__(self):

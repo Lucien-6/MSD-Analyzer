@@ -89,7 +89,7 @@ class ReportGenerator:
         plt.text(0.5, 0.5, settings_text, fontsize=12, ha='center', va='center')
         
         # 添加页脚
-        plt.text(0.5, 0.15, "分析工具: MSD Analyzer V1.1", fontsize=14, ha='center')
+        plt.text(0.5, 0.15, "分析工具: MSD Analyzer V1.2", fontsize=14, ha='center')
 
         # 添加作者
         plt.text(0.5, 0.01, "程序作者: Lucien\n联系方式: lucien-6@qq.com", fontsize=10, ha='center')

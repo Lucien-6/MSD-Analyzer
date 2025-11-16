@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                             QGroupBox, QFormLayout, QListWidget, QSplitter,
                             QTextBrowser, QDialog)
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore import Qt, pyqtSlot
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QIcon
 
 from gui.plot_widget import PlotWidget
@@ -51,7 +51,7 @@ class HelpDialog(QDialog):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("MSD Analyzer V1.1 - by Lucien")
+        self.setWindowTitle("MSD Analyzer V1.2 - by Lucien")
         self.resize(2000, 1500)
 
         # 设置应用图标
@@ -164,6 +164,9 @@ class MainWindow(QMainWindow):
         self.scaling_btn.clicked.connect(self.analyze_scaling)
         self.save_btn.clicked.connect(self.save_results)
         
+        # 连接设置面板的排除颗粒变化信号
+        self.settings_panel.excluded_particles_changed.connect(self.on_excluded_particles_changed)
+        
         # 设置状态栏
         self.statusBar().showMessage("就绪")
         
@@ -225,6 +228,11 @@ class MainWindow(QMainWindow):
                 excluded_particles=self.excluded_particles,
                 parent_window=self  # 传入主窗口引用
             )
+            
+            # 检查MSD计算是否成功
+            if self.msd_results is None:
+                QMessageBox.warning(self, "警告", "MSD计算被中断或失败，请重试")
+                return
             
             # 绘制MSD图
             self.msd_plot.clear()
@@ -400,3 +408,19 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "错误", f"保存结果失败: {str(e)}")
             self.statusBar().showMessage("保存结果失败")
+    
+    def on_excluded_particles_changed(self, excluded_ids):
+        """
+        当排除颗粒列表变化时的处理函数
+        
+        参数:
+        excluded_ids: 被排除的颗粒ID列表
+        """
+        # 更新轨迹图的可见性
+        self.trajectory_plot.update_particle_visibility(excluded_ids)
+        
+        # 更新状态栏提示
+        if excluded_ids:
+            self.statusBar().showMessage(f"已排除 {len(excluded_ids)} 个颗粒: {', '.join(excluded_ids[:3])}{'...' if len(excluded_ids) > 3 else ''}")
+        else:
+            self.statusBar().showMessage("未排除任何颗粒")

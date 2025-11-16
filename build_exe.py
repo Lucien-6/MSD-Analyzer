@@ -26,7 +26,12 @@ def build_executable():
     
     if result.returncode != 0:
         print("打包失败！错误信息:")
-        print(result.stderr)
+        if result.stdout:
+            print("标准输出:")
+            print(result.stdout)
+        if result.stderr:
+            print("错误输出:")
+            print(result.stderr)
         return False
     
     print("打包完成！可执行文件位于 dist 文件夹中")
@@ -34,6 +39,37 @@ def build_executable():
     return True
 
 if __name__ == "__main__":
+    # 检查并安装必要的依赖
+    print("检查并安装必要的依赖...")
+    dependencies = [
+        'pyinstaller',
+    ]
+    
+    for dep in dependencies:
+        try:
+            subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade', dep],
+                         check=True,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+            print(f"已安装/更新 {dep}")
+        except subprocess.CalledProcessError as e:
+            print(f"安装 {dep} 失败: {e}")
+            sys.exit(1)
+    
+    # 检查PyInstaller版本
+    try:
+        result = subprocess.run([sys.executable, '-m', 'PyInstaller', '--version'],
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE,
+                              text=True)
+        if result.returncode == 0:
+            print(f"检测到PyInstaller版本: {result.stdout.strip()}")
+        else:
+            raise ImportError("无法获取PyInstaller版本")
+    except (ImportError, subprocess.SubprocessError):
+        print("PyInstaller安装可能有问题，请检查安装状态")
+        sys.exit(1)
+    
     success = build_executable()
     if success:
         print("\n您可以通过运行 dist/MSD Analyzer.exe 来启动应用")

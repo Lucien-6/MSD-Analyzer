@@ -4,7 +4,7 @@ block_cipher = None
 
 a = Analysis(
     ['main.py'],
-    pathex=['e:\\Other\\MSD Analyzer'],
+    pathex=['E:\\Codes\\MSD Analyzer'],
     binaries=[],
     datas=[],
     hiddenimports=[],

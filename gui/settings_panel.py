@@ -3,10 +3,14 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
                             QGroupBox, QListWidget, QAbstractItemView, QPushButton,
                             QRadioButton, QButtonGroup, QSpinBox)
 from PyQt5.QtWidgets import QSizePolicy
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont 
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QFont
+from utils.helpers import natural_sort_key 
 
 class SettingsPanel(QWidget):
+    # 定义信号：当排除颗粒列表变化时发射
+    excluded_particles_changed = pyqtSignal(list)
+    
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setup_ui()
@@ -21,7 +25,7 @@ class SettingsPanel(QWidget):
         units_layout = QFormLayout()
         
         self.time_unit_combo = QComboBox()
-        self.time_unit_combo.addItems(["s", "ms", "min", "h"])
+        self.time_unit_combo.addItems(["μs", "ms", "s", "min", "h"])
         self.time_unit_combo.setCurrentText("s")
         
         self.space_unit_combo = QComboBox()
@@ -141,6 +145,9 @@ class SettingsPanel(QWidget):
         self.deselect_all_btn.clicked.connect(self._deselect_all_particles)
         self.time_unit_combo.currentTextChanged.connect(self._update_time_unit)
         
+        # 连接颗粒列表选择变化信号
+        self.particles_list.itemSelectionChanged.connect(self._on_particle_selection_changed)
+        
         # 初始化控件状态
         # 删除对_update_gravity_controls的调用
         self._update_fit_controls()
@@ -196,9 +203,11 @@ class SettingsPanel(QWidget):
         self.end_time_spin.setSuffix(f" {unit}")
         
     def update_particle_list(self, particle_ids):
-        """更新颗粒列表"""
+        """更新颗粒列表（使用自然排序）"""
         self.particles_list.clear()
-        self.particles_list.addItems(particle_ids)
+        # 使用自然排序
+        sorted_ids = sorted(particle_ids, key=natural_sort_key)
+        self.particles_list.addItems(sorted_ids)
         
     def get_excluded_particles(self):
         """获取被排除的颗粒ID列表"""
@@ -208,6 +217,12 @@ class SettingsPanel(QWidget):
             if item.isSelected():
                 excluded.append(item.text())
         return excluded
+    
+    def _on_particle_selection_changed(self):
+        """当颗粒选择发生变化时触发"""
+        excluded = self.get_excluded_particles()
+        # 发射信号通知主窗口
+        self.excluded_particles_changed.emit(excluded)
         
     def get_time_unit(self):
         """获取时间单位"""
@@ -217,19 +232,7 @@ class SettingsPanel(QWidget):
         """获取空间单位"""
         return self.space_unit_combo.currentText()
         
-    def is_gravity_enabled(self):
-        """是否启用重力"""
-        return self.gravity_check.isChecked()
-        
-    def get_gravity_direction(self):
-        """获取重力方向"""
-        if self.x_radio.isChecked():
-            return 'x'
-        elif self.y_radio.isChecked():
-            return 'y'
-        else:
-            return 'z'
-            
+
     def get_fit_settings(self):
         """获取拟合设置"""
         settings = {

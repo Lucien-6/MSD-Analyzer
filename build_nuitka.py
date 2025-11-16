@@ -55,8 +55,8 @@ def build_executable():
     # 重命名可执行文件为更友好的名称
     try:
         os.rename(
-            os.path.join('nuitka_build', 'main.exe'),
-            os.path.join('nuitka_build', 'MSD Analyzer.exe')
+            os.path.join('nuitka_build', 'main.dist', 'main.exe'),
+            os.path.join('nuitka_build', 'main.dist', 'MSD Analyzer.exe')
         )
         print("已将可执行文件重命名为 'MSD Analyzer.exe'")
     except Exception as e:
@@ -102,5 +102,5 @@ if __name__ == "__main__":
     
     success = build_executable()
     if success:
-        print("\n您可以通过运行 nuitka_build/MSD Analyzer.exe 来启动应用")
+        print("\n您可以通过运行 nuitka_build/main.dist/MSD Analyzer.exe 来启动应用")
     sys.exit(0 if success else 1)

@@ -43,8 +43,15 @@ try:
                                "双击'单位设置'查看使用指南。")
         
         sys.exit(app.exec_())
+except ImportError as e:
+    error_msg = f"依赖库导入失败:\n{str(e)}\n请检查是否安装了所有依赖库"
+    print(error_msg)
+    sys.exit(1)
 except Exception as e:
     error_msg = f"程序启动时发生错误:\n{str(e)}\n\n{traceback.format_exc()}"
-    app = QApplication(sys.argv) if not 'app' in locals() else app
-    QMessageBox.critical(None, "启动错误", error_msg)
+    try:
+        app = QApplication(sys.argv) if 'app' not in locals() else app
+        QMessageBox.critical(None, "启动错误", error_msg)
+    except:
+        print(error_msg)  # 如果GUI创建失败，至少打印错误
     sys.exit(1)

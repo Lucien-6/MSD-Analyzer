@@ -9,11 +9,10 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout
 from PyQt5.QtCore import Qt
 import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
-from matplotlib.font_manager import FontProperties
 from mpl_toolkits.mplot3d import Axes3D
-import pandas as pd
 # 导入自定义的文本处理函数
 from utils.text_utils import format_special_chars, superscript_alpha
+from utils.helpers import natural_sort_key
 
 class PlotWidget(QWidget):
     def __init__(self, title="", interactive=False, parent=None):
@@ -77,6 +76,9 @@ class PlotWidget(QWidget):
         self.start_markers = {}
         self.end_markers = {}
         
+        # 对颗粒ID进行自然排序
+        sorted_particle_ids = sorted(trajectories.keys(), key=natural_sort_key)
+        
         # 获取颗粒数量
         particle_count = len(trajectories)
         # 设置图例最大显示数量
@@ -88,7 +90,9 @@ class PlotWidget(QWidget):
             ax.set_xlabel(f"X ({space_unit})")
             ax.set_ylabel(f"Y ({space_unit})")
             
-            for i, (particle_id, data) in enumerate(trajectories.items()):
+            # 使用排序后的ID列表
+            for i, particle_id in enumerate(sorted_particle_ids):
+                data = trajectories[particle_id]
                 color = colors[i % len(colors)]
                 x = data['x'].values
                 y = data['y'].values
@@ -114,7 +118,9 @@ class PlotWidget(QWidget):
             ax.set_ylabel(f"Y ({space_unit})")
             ax.set_zlabel(f"Z ({space_unit}))")
             
-            for i, (particle_id, data) in enumerate(trajectories.items()):
+            # 使用排序后的ID列表
+            for i, particle_id in enumerate(sorted_particle_ids):
+                data = trajectories[particle_id]
                 color = colors[i % len(colors)]
                 x = data['x'].values
                 y = data['y'].values
@@ -135,8 +141,9 @@ class PlotWidget(QWidget):
                 self.particle_visibility[particle_id] = True
         
         # 创建图例 - 修改位置设置和边界框参数
+        # 使用排序后的ID列表创建图例
         handles = [mpatches.Patch(color=colors[i % len(colors)], label=pid) 
-                for i, pid in enumerate(trajectories.keys())]
+                for i, pid in enumerate(sorted_particle_ids)]
         
         # 处理图例 - 当颗粒数量过多时采用替代方案
         if particle_count <= max_legend_items:
@@ -145,14 +152,16 @@ class PlotWidget(QWidget):
                             bbox_to_anchor=(1.15, 1), title="颗粒ID")
             
             # 设置图例文本属性
-            particle_ids = list(trajectories.keys())
+            # 使用排序后的ID列表
+            particle_ids = sorted_particle_ids
             for i, text in enumerate(legend.get_texts()):
                 if i < len(particle_ids):  # 防止索引越界
                     text.particle_id = particle_ids[i]  # 设置颗粒ID属性
         else:
             # 颗粒数量过多时，只显示部分颗粒ID
             selected_handles = handles[:max_legend_items-1]  # 留一个位置给"更多..."
-            selected_ids = list(trajectories.keys())[:max_legend_items-1]
+            # 使用排序后的ID列表
+            selected_ids = sorted_particle_ids[:max_legend_items-1]
             
             # 添加"更多..."项
             more_patch = mpatches.Patch(color='gray', label=f'更多... (共{particle_count}个)')
@@ -298,6 +307,41 @@ class PlotWidget(QWidget):
         self.all_visible = True
         self.canvas.draw_idle()
 
+    def update_particle_visibility(self, excluded_particle_ids):
+        """
+        根据排除列表更新轨迹可见性
+        
+        参数:
+        excluded_particle_ids: 要排除（隐藏）的颗粒ID列表
+        """
+        if not hasattr(self, 'particle_lines') or not self.particle_lines:
+            return
+        
+        # 遍历所有颗粒
+        for particle_id, line in self.particle_lines.items():
+            # 判断是否应该隐藏
+            should_hide = particle_id in excluded_particle_ids
+            
+            # 设置可见性
+            line.set_visible(not should_hide)
+            
+            # 同时设置起点和终点标记的可见性
+            if particle_id in self.start_markers:
+                self.start_markers[particle_id].set_visible(not should_hide)
+            if particle_id in self.end_markers:
+                self.end_markers[particle_id].set_visible(not should_hide)
+            
+            self.particle_visibility[particle_id] = not should_hide
+            
+            # 更新图例透明度
+            if hasattr(line.axes, 'get_legend') and line.axes.get_legend():
+                for text in line.axes.get_legend().get_texts():
+                    if hasattr(text, 'particle_id') and text.particle_id == particle_id:
+                        text.set_alpha(0.3 if should_hide else 1.0)
+        
+        # 更新画布
+        self.canvas.draw_idle()
+
     def plot_msd(self, msd_results, time_unit, space_unit):
         """绘制MSD图"""
         self.figure.clear()
@@ -315,8 +359,12 @@ class PlotWidget(QWidget):
         # 设置图例最大显示数量
         max_legend_items = 20
         
+        # 对颗粒ID进行自然排序
+        sorted_particle_ids = sorted(msd_results['individual'].keys(), key=natural_sort_key)
+        
         # 绘制每个颗粒的MSD
-        for i, (particle_id, msd_data) in enumerate(msd_results['individual'].items()):
+        for i, particle_id in enumerate(sorted_particle_ids):
+            msd_data = msd_results['individual'][particle_id]
             color = colors[i % len(colors)]
             line, = ax.plot(msd_data['lag_time'], msd_data['msd'], '-', 
                    color=color, alpha=0.5, linewidth=1)
