@@ -4,16 +4,16 @@ def get_help_content():
     """返回帮助文档内容"""
     return """
 
-# MSD Analyzer V1.2 使用指南
+# MSD Analyzer V1.4 使用指南
 ###
 ## 简介
-**MSD Analyzer V1.2**是一个专业的粒子均方位移(Mean Squared Displacement, MSD)分析工具，专为研究布朗运动、扩散过程和微观粒子动力学而设计。本软件支持2D/3D轨迹数据分析，提供多种扩散模型拟合，包括简单扩散、定向扩散和受限扩散，并具备高效的并行计算能力和丰富的交互式可视化功能。
+**MSD Analyzer V1.4**是一个专业的粒子均方位移(Mean Squared Displacement, MSD)分析工具，专为研究布朗运动、扩散过程和微观粒子动力学而设计。本软件支持2D/3D轨迹数据分析，提供多种扩散模型拟合，包括简单扩散、定向扩散和受限扩散，并具备高效的向量化计算、智能并行计算能力和丰富的交互式可视化功能。**V1.4 版本新增 TrackMate 数据格式兼容支持**，可直接导入 ImageJ/Fiji TrackMate 插件导出的轨迹数据。
 ###
 ## 作者信息
 - **作者**：Lucien
 - **EMAIL**：lucien-6@qq.com
-- **版本**：V1.2
-- **更新日期**：2025年
+- **版本**：V1.4
+- **更新日期**：2025年12月
 ###
 ## 基本工作流程
 1. 加载数据
@@ -43,13 +43,27 @@ def get_help_content():
 - 第一行为标题行，包含T、X、Y三列(2D运动)或T、X、Y、Z四列(3D运动)
 - 可用"particle_id"列来区分不同的颗粒，如果没有此列，所有数据将被视为单个颗粒
 
+#### 🆕 TrackMate 数据格式支持（V1.4新增）：
+程序现已**原生支持 ImageJ/Fiji TrackMate 插件导出的 CSV 文件**！
+- **自动格式检测**：程序会自动识别 TrackMate 导出的 CSV 格式
+- **自动跳过元数据行**：TrackMate CSV 文件的描述行和单位行会被自动跳过
+- **支持的 TrackMate 列名**：
+  * TRACK_ID → 粒子ID
+  * POSITION_X → X坐标
+  * POSITION_Y → Y坐标
+  * POSITION_Z → Z坐标
+  * POSITION_T → 时间
+  * FRAME → 时间（备选）
+- **导出方式**：在 TrackMate 中选择 "Analysis" → "Spots in tracks statistics" → "Export to CSV"
+- **无需预处理**：直接导入即可，无需手动修改文件！
+
 #### 灵活的列名支持：
 程序支持多种列名格式，会自动识别以下列名：
-- **时间列**: T, Time, time, times, Times
-- **X坐标**: X, Position_X, Position_x, Center_X, Center_x, CenterX, center_x
-- **Y坐标**: Y, Position_Y, Position_y, Center_Y, Center_y, CenterY, center_y
-- **Z坐标**: Z, Position_Z, Position_z, Center_Z, Center_z, CenterZ, center_z
-- **粒子ID**: particle_id, Particle_ID, ParticleID, ID, id, PID, pid, Particle
+- **时间列**: T, Time, time, times, Times, POSITION_T, FRAME
+- **X坐标**: X, Position_X, Position_x, Center_X, Center_x, CenterX, center_x, POSITION_X
+- **Y坐标**: Y, Position_Y, Position_y, Center_Y, Center_y, CenterY, center_y, POSITION_Y
+- **Z坐标**: Z, Position_Z, Position_z, Center_Z, Center_z, CenterZ, center_z, POSITION_Z
+- **粒子ID**: particle_id, Particle_ID, ParticleID, ID, id, PID, pid, Particle, TRACK_ID
 
 这意味着您无需修改数据文件的列名，程序会自动适配！
 
@@ -113,7 +127,11 @@ def get_help_content():
   * **左键点击**某条轨迹：只显示该轨迹
   * **右键点击**某条轨迹：隐藏该轨迹
   * **双击空白处**：恢复显示所有轨迹
-  * ▲ 为轨迹起点，● 为轨迹终点
+- 轨迹图标记说明：
+  * **▲ (Triangle/三角形)**：轨迹起点 (Start Point) - 表示粒子运动的初始位置
+  * **● (Circle/圆点)**：轨迹终点 (End Point) - 表示粒子运动的最终位置
+- 轨迹图比例说明：
+  * X轴与Y轴比例严格保持1:1，确保轨迹形态不失真
 ###
 ### 6. 计算MSD
 - 点击"**计算MSD**"按钮
@@ -122,6 +140,17 @@ def get_help_content():
   * 所有粒子的平均MSD
   * 动态扩散系数(RDC)
   
+#### 进度显示：
+- 计算过程中，状态栏右侧会显示**进度条**
+- 进度条实时显示计算进度百分比
+- 状态栏文字提示当前计算阶段
+- **界面保持响应**：计算在后台线程执行，您可以自由切换选项卡查看其他内容
+
+#### 高效向量化计算：
+- V1.3 版本采用 NumPy 向量化操作优化 MSD 计算
+- 相比传统嵌套循环，**性能提升 2-5 倍**
+- 内存使用更高效
+
 #### 智能并行计算：
 - 程序会自动评估数据量，智能选择计算策略
 - **自动启用并行计算的条件**：
@@ -146,12 +175,6 @@ def get_help_content():
   * 显示动态扩散系数随时间的变化
   * RDC = d(MSD)/dt / (2d)
   * 用于自动拟合模式的区间选择
-
-#### 性能提示：
-- ⚠️ 此步骤最为耗时，请耐心等待！
-- 大数据集（>100个粒子或>1000个时间点）可能需要数分钟
-- 计算过程中请勿关闭程序
-- 状态栏会显示"正在计算MSD..."提示
 ###
 ### 7. 拟合MSD
 - 点击"**拟合MSD**"按钮
@@ -282,16 +305,16 @@ def get_help_content():
 
 ### 性能优化建议
 - **大数据集处理**：
-  * 充分利用并行计算（自动启用）
+  * 充分利用向量化计算和并行计算（自动启用）
   * 先用小数据集测试参数
   * 避免频繁重复计算
 - **内存管理**：
   * 超大数据集（>1000粒子）建议分批处理
   * 及时保存结果，避免数据丢失
-- **计算时间估算**：
-  * 10个粒子×100时间点：<1秒
-  * 100个粒子×1000时间点：1-5分钟
-  * 1000个粒子×1000时间点：10-30分钟
+- **计算时间估算**（V1.3 向量化优化后）：
+  * 10个粒子×100时间点：<0.5秒
+  * 100个粒子×1000时间点：30秒-2分钟
+  * 500个粒子×1000时间点：2-5分钟
 
 ### 结果导出与报告
 - **Excel文件内容**：
@@ -314,6 +337,7 @@ def get_help_content():
   * 随时查阅，无需退出程序
 - **状态栏提示**：
   * 实时显示操作进度
+  * 进度条显示计算百分比
   * 显示排除粒子数量
   * 显示计算状态
 ###
@@ -345,10 +369,16 @@ A: PDF报告是只读格式，但您可以使用专业PDF编辑器进行修改�
 ### Q: 程序支持哪些操作系统？
 A: 从源码运行支持Windows、macOS和Linux。预编译可执行文件目前仅提供Windows版本。
 ###
+### Q: 计算过程中界面卡住了怎么办？
+A: V1.3 版本采用异步计算，界面不会卡住。如果遇到问题，可能是数据量过大，请耐心等待进度条完成。如进度条长时间无响应，可尝试重启程序。
+###
+### Q: 如何导入 TrackMate 的数据？
+A: V1.4 版本已原生支持 TrackMate 数据格式！在 TrackMate 中完成粒子追踪后，选择 "Analysis" → "Spots in tracks statistics" → "Export to CSV"，然后直接在 MSD Analyzer 中加载该 CSV 文件即可。程序会自动识别 TrackMate 格式并正确解析数据。
+###
 ### Q: 如何引用本软件？
 A: 如果在学术论文中使用本软件，请引用：
 ```
-MSD Analyzer V1.2, Lucien, 2025
+MSD Analyzer V1.4, Lucien, 2025
 GitHub: https://github.com/Lucien-6/MSD-Analyzer
 ```
 ###
@@ -363,9 +393,23 @@ GitHub: https://github.com/Lucien-6/MSD-Analyzer
 ---
 ###
 ## 版本信息
-- **当前版本**：V1.2
-- **发布日期**：2025年
-- **主要更新**：
+- **当前版本**：V1.4
+- **发布日期**：2025年12月
+- **V1.4 主要更新**：
+  * 🔬 **TrackMate 兼容**：原生支持 ImageJ/Fiji TrackMate 插件导出的 CSV 数据格式
+  * 📂 **自动格式检测**：智能识别 TrackMate CSV 格式，自动跳过元数据行
+  * 🏷️ **扩展列名映射**：新增 TRACK_ID, POSITION_X/Y/Z, POSITION_T, FRAME 等列名支持
+  * 🔄 **无缝导入**：TrackMate 数据无需预处理，直接导入即可分析
+
+- **V1.3 主要更新**：
+  * 🚀 **向量化MSD计算**：采用NumPy向量化操作，性能提升2-5倍
+  * 📊 **进度条显示**：MSD计算时显示实时进度条
+  * ⚡ **异步非阻塞计算**：后台线程执行计算，界面保持流畅响应
+  * 🏗️ **状态管理优化**：采用AppState类集中管理应用状态
+  * 📝 **日志系统**：完善的logging系统，警告/错误弹窗提示
+  * 🔧 **架构改进**：Worker线程模式，计算与GUI完全解耦
+
+- **V1.2 主要更新**：
   * 完善的列名映射系统
   * 三种扩散模型支持
   * 智能并行计算

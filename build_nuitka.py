@@ -35,7 +35,8 @@ def build_executable():
         '--show-progress',               
         '--enable-plugin=pyqt5',         
         '--nofollow-import-to=tkinter',  
-        '--windows-icon-from-ico=icon.ico',  # 修改后的参数名称  
+        '--windows-icon-from-ico=icon.ico',
+        '--windows-disable-console',     # 禁用控制台窗口，仅显示GUI界面
         'main.py'                        
     ]
     

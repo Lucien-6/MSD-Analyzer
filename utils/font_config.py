@@ -1,53 +1,73 @@
+"""
+MSD Analyzer Font Configuration Module
+
+Configures matplotlib fonts for publication-quality figures.
+Uses Arial as the primary font with proper size hierarchy.
+
+Author: Lucien
+Email: lucien-6@qq.com
+"""
 import matplotlib
 import matplotlib.font_manager as fm
 import platform
-import os
 import warnings
 
-# 忽略字体相关警告
+# Ignore font-related warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="matplotlib")
 
+
 def configure_fonts():
-    """配置matplotlib字体系统，确保中文和特殊字符正确显示"""
+    """
+    Configure matplotlib font system for publication-quality figures.
+    
+    Font hierarchy (following top-tier journal standards):
+    - Title: 14pt, Bold
+    - Axis labels: 12pt, Normal
+    - Tick labels: 10pt, Normal
+    - Legend: 10pt, Normal
+    - Legend title: 11pt, Normal
+    
+    Returns
+    -------
+    list
+        List of available fonts in priority order
+    """
     system = platform.system()
     
-    # 创建字体列表，优先使用支持数学符号和中文的字体
+    # Font priority list - Arial first for publication quality
     font_list = []
     
     if system == 'Windows':
-        # Windows系统字体优先级
         font_list = [
-            'Microsoft YaHei',  # 微软雅黑，支持中文
-            'SimSun',           # 宋体
-            'Arial Unicode MS', # 支持广泛的Unicode字符
-            'DejaVu Sans',      # 良好支持数学符号
-            'Segoe UI Symbol',  # Windows符号字体
-            'Arial',
-            'Helvetica'
+            'Arial',            # Primary font for publications
+            'Helvetica',        # Alternative sans-serif
+            'DejaVu Sans',      # Good math symbol support
+            'Segoe UI',         # Windows system font
+            'Microsoft YaHei',  # Chinese support fallback
+            'SimSun',           # Chinese support fallback
         ]
     elif system == 'Darwin':  # macOS
         font_list = [
-            'PingFang SC',      # 苹方，macOS上的中文字体
-            'Heiti SC',         # 黑体-简
-            'Apple SD Gothic Neo',
-            'Hiragino Sans GB',
-            'Arial Unicode MS',
-            'Helvetica'
+            'Arial',
+            'Helvetica',
+            'Helvetica Neue',
+            'DejaVu Sans',
+            'PingFang SC',      # Chinese support fallback
         ]
-    else:  # Linux和其他系统
+    else:  # Linux and other systems
         font_list = [
-            'Noto Sans CJK SC', # Google Noto字体，支持中文
-            'WenQuanYi Micro Hei',
+            'Arial',
             'DejaVu Sans',
             'Liberation Sans',
             'FreeSans',
-            'Ubuntu'
+            'Noto Sans',
+            'Noto Sans CJK SC',  # Chinese support fallback
         ]
     
-    # 添加通用备选字体
-    font_list.extend(['DejaVu Sans', 'STIXGeneral', 'STIX', 'XITS', 'FreeSans'])
+    # Add universal fallback fonts
+    font_list.extend(['DejaVu Sans', 'STIXGeneral', 'FreeSans'])
     
-    # 过滤出系统中实际存在的字体
+    # Filter to fonts actually available on the system
     available_fonts = []
     system_fonts = set([f.name for f in fm.fontManager.ttflist])
     
@@ -56,25 +76,71 @@ def configure_fonts():
             available_fonts.append(font)
             
     if not available_fonts:
-        # 如果没有找到任何指定字体，使用系统默认字体
         available_fonts = ['sans-serif']
     
-    # 配置matplotlib字体
+    # ==========================================
+    # Font Family Configuration
+    # ==========================================
     matplotlib.rcParams['font.family'] = 'sans-serif'
     matplotlib.rcParams['font.sans-serif'] = available_fonts
     
-    # 启用Unicode负号
+    # ==========================================
+    # Font Size Hierarchy (Top-tier Journal Standards, +50% for GUI display)
+    # ==========================================
+    # Title: 21pt (14 * 1.5), Bold
+    matplotlib.rcParams['axes.titlesize'] = 21
+    matplotlib.rcParams['axes.titleweight'] = 'bold'
+    matplotlib.rcParams['figure.titlesize'] = 24
+    matplotlib.rcParams['figure.titleweight'] = 'bold'
+    
+    # Axis labels: 18pt (12 * 1.5)
+    matplotlib.rcParams['axes.labelsize'] = 18
+    matplotlib.rcParams['axes.labelweight'] = 'normal'
+    
+    # Tick labels: 15pt (10 * 1.5)
+    matplotlib.rcParams['xtick.labelsize'] = 15
+    matplotlib.rcParams['ytick.labelsize'] = 15
+    
+    # Legend: 15pt (10 * 1.5), title 17pt (11 * 1.5)
+    matplotlib.rcParams['legend.fontsize'] = 15
+    matplotlib.rcParams['legend.title_fontsize'] = 17
+    
+    # ==========================================
+    # Line and Axis Style (Publication Quality)
+    # ==========================================
+    matplotlib.rcParams['lines.linewidth'] = 1.5
+    matplotlib.rcParams['axes.linewidth'] = 1.2
+    matplotlib.rcParams['xtick.major.width'] = 1.0
+    matplotlib.rcParams['ytick.major.width'] = 1.0
+    matplotlib.rcParams['xtick.minor.width'] = 0.8
+    matplotlib.rcParams['ytick.minor.width'] = 0.8
+    matplotlib.rcParams['xtick.major.size'] = 5
+    matplotlib.rcParams['ytick.major.size'] = 5
+    matplotlib.rcParams['xtick.minor.size'] = 3
+    matplotlib.rcParams['ytick.minor.size'] = 3
+    matplotlib.rcParams['xtick.direction'] = 'in'
+    matplotlib.rcParams['ytick.direction'] = 'in'
+    
+    # ==========================================
+    # Grid Style
+    # ==========================================
+    matplotlib.rcParams['grid.linewidth'] = 0.8
+    matplotlib.rcParams['grid.alpha'] = 0.5
+    
+    # ==========================================
+    # Figure and Subplot
+    # ==========================================
+    matplotlib.rcParams['figure.dpi'] = 100
+    matplotlib.rcParams['savefig.dpi'] = 300
+    matplotlib.rcParams['savefig.bbox'] = 'tight'
+    matplotlib.rcParams['savefig.pad_inches'] = 0.1
+    
+    # ==========================================
+    # Math Text Configuration
+    # ==========================================
     matplotlib.rcParams['axes.unicode_minus'] = True
-    
-    # 配置数学文本
-    matplotlib.rcParams['mathtext.fontset'] = 'stix'  # 使用STIX字体集，更好地支持数学符号
-    # 设置数学字体为正体，解决μm中μ与m字体不一致的问题
+    matplotlib.rcParams['mathtext.fontset'] = 'stix'
     matplotlib.rcParams['mathtext.default'] = 'regular'
+    matplotlib.rcParams['text.usetex'] = False
     
-    # 使用数学文本渲染特殊字符
-    matplotlib.rcParams['text.usetex'] = False  # 不使用LaTeX，避免依赖问题
-    
-    # print(f"当前字体配置: {available_fonts}，建议安装DejaVu Sans字体，以支持数学符号和中文。")
-    
-    # 返回可用字体列表，以便其他地方使用
     return available_fonts

@@ -1,8 +1,8 @@
-# MSD Analyzer V1.2
+# MSD Analyzer V1.4
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
-[![Version](https://img.shields.io/badge/version-1.2-brightgreen.svg)](https://github.com/Lucien-6/MSD-Analyzer/releases)
+[![Version](https://img.shields.io/badge/version-1.4-brightgreen.svg)](https://github.com/Lucien-6/MSD-Analyzer/releases)
 
 MSD Analyzer 是一款专业的均方位移 (Mean Squared Displacement, MSD) 分析桌面应用程序。它提供了友好的图形用户界面，支持2D/3D粒子轨迹数据的导入、处理、可视化，并提供多种物理模型拟合与参数提取功能，适用于布朗运动、扩散过程和微观粒子动力学研究。
 
@@ -22,13 +22,17 @@ MSD Analyzer 是一款专业的均方位移 (Mean Squared Displacement, MSD) 分
 
 ### 数据导入与处理
 - **多格式支持**: 支持从 Excel (.xlsx, .xls) 和 CSV (.csv) 格式导入轨迹数据
-- **灵活的列名映射**: 自动识别多种列名格式（T/Time/times, X/Position_X/Center_X等）
+- **🆕 TrackMate 兼容**: 原生支持 ImageJ/Fiji TrackMate 插件导出的 CSV 数据格式，自动识别并解析
+- **灵活的列名映射**: 自动识别多种列名格式（T/Time/times, X/Position_X/Center_X, POSITION_X/POSITION_T 等）
 - **2D/3D轨迹支持**: 自动检测并处理二维或三维粒子运动轨迹
 - **多粒子管理**: 支持同时加载和分析多个粒子的轨迹数据
 - **粒子筛选**: 可选择性排除特定粒子，灵活控制分析范围
 
 ### MSD计算与分析
-- **高效并行计算**: 自动根据数据量选择串行或并行计算模式，充分利用多核CPU
+- **高效向量化计算**: 采用 NumPy 向量化操作，计算性能提升 2-5 倍
+- **智能并行计算**: 自动根据数据量选择串行或并行计算模式，充分利用多核CPU
+- **实时进度显示**: 计算过程中显示进度条，实时反馈计算状态
+- **异步非阻塞**: 采用后台线程计算，界面保持流畅响应
 - **完整MSD计算**: 计算每个粒子的单独MSD和所有粒子的平均MSD
 - **动态扩散系数(RDC)**: 自动计算并可视化RDC曲线
 - **统计信息**: 提供每个时间点参与平均的粒子数量统计
@@ -64,10 +68,12 @@ MSD Analyzer 是一款专业的均方位移 (Mean Squared Displacement, MSD) 分
 
 ### 用户体验
 - **现代化GUI**: 基于 PyQt5 构建，采用Fusion风格，界面美观直观
+- **进度条显示**: MSD计算时显示实时进度条，直观了解计算进度
+- **异步计算**: 长时间计算在后台执行，界面保持响应不卡顿
 - **单位自定义**: 支持多种时间单位（μs, ms, s, min, h）和空间单位（m, mm, μm, nm）
 - **实时状态反馈**: 状态栏实时显示操作进度和提示信息
 - **内置帮助文档**: 双击"单位设置"标题栏即可查看详细使用指南
-- **错误处理**: 完善的异常处理机制，友好的错误提示
+- **错误处理**: 完善的异常处理机制，友好的错误提示弹窗
 
 ## 🛠️ 技术栈
 
@@ -76,7 +82,7 @@ MSD Analyzer 是一款专业的均方位移 (Mean Squared Displacement, MSD) 分
 - **PyQt5 ≥5.15.0**: 图形用户界面框架，采用Fusion风格
 
 ### 科学计算
-- **NumPy ≥1.20.0**: 高性能数值计算
+- **NumPy ≥1.20.0**: 高性能数值计算，向量化MSD计算
 - **Pandas ≥1.3.0**: 数据处理与分析
 - **SciPy ≥1.7.0**: 科学计算和曲线拟合
 
@@ -90,9 +96,18 @@ MSD Analyzer 是一款专业的均方位移 (Mean Squared Displacement, MSD) 分
 - **ReportLab ≥3.6.0**: PDF报告生成
 
 ### 性能优化
+- **向量化MSD计算**: 使用NumPy向量化操作消除嵌套循环，性能提升2-5倍
 - **多线程并行计算**: 使用ThreadPoolExecutor实现MSD并行计算
-- **向量化运算**: 充分利用NumPy向量化操作提升性能
+- **异步GUI**: 使用QThread实现后台计算，界面保持响应
 - **智能计算策略**: 根据数据量自动选择串行或并行模式
+
+### 架构设计
+- **模块化状态管理**: 使用AppState类集中管理应用状态
+- **工作线程模式**: Worker线程处理耗时计算，信号槽通信
+- **日志系统**: 使用Python logging模块，支持警告/错误弹窗提示（QMessageBoxHandler）
+- **字体配置**: 使用Arial字体，符合顶级期刊论文标准，支持跨平台字体回退
+- **文本处理**: 特殊字符（μ、²、α等）自动转换为matplotlib兼容格式
+- **MVC架构**: 核心计算与GUI分离，代码结构清晰
 
 ## ⚙️ 安装
 
@@ -160,39 +175,47 @@ python main.py
 3. **数据格式要求**
    - **Excel格式**: 每个粒子的轨迹保存在单独的sheet中，sheet名称即为粒子ID
    - **CSV格式**: 可使用particle_id列区分不同粒子，或作为单粒子数据
+   - **🆕 TrackMate格式**: 直接支持 TrackMate "Spots in tracks statistics" 导出的 CSV 文件
    - **必需列**: T(时间), X, Y (2D) 或 T, X, Y, Z (3D)
-   - **列名灵活**: 支持多种列名格式，如Time/times/T, Position_X/Center_X/X等
+   - **列名灵活**: 支持多种列名格式，如Time/times/T, Position_X/Center_X/X, POSITION_X/POSITION_T等
 
-4. **选择扩散模型**
+4. **🆕 TrackMate 数据导入（可选）**
+   - 在 ImageJ/Fiji 中使用 TrackMate 完成粒子追踪
+   - 选择 "Analysis" → "Spots in tracks statistics" → "Export to CSV"
+   - 在 MSD Analyzer 中直接加载导出的 CSV 文件
+   - 程序自动识别 TrackMate 格式，无需手动预处理
+
+5. **选择扩散模型**
    - **简单扩散**: 纯布朗运动
    - **定向扩散**: 有恒定漂移速度的运动
    - **受限扩散**: 在有限空间内的扩散
 
-5. **配置拟合参数**
+6. **配置拟合参数**
    - **自动拟合**: 程序自动寻找最佳拟合区间（推荐）
    - **手动拟合**: 自定义起始和终止时间
    - 设置拟合优度阈值（R²）
 
-6. **筛选粒子**（可选）
+7. **筛选粒子**（可选）
    - 在粒子列表中选择要排除的粒子
    - 或通过轨迹图交互操作隐藏特定轨迹
 
-7. **计算MSD**
+8. **计算MSD**
    - 点击"计算MSD"按钮
-   - 程序自动计算所有粒子的MSD和平均MSD
+   - 状态栏显示进度条，实时反馈计算进度
+   - 界面保持响应，可随时查看其他选项卡
    - 大数据量时自动启用并行计算加速
 
-8. **拟合分析**
+9. **拟合分析**
    - 点击"拟合MSD"按钮进行模型拟合
    - 查看扩散系数D、漂移速度V或约束长度L等参数
    - 所有参数都提供95%置信区间
 
-9. **标度律分析**
-   - 点击"标度律分析"按钮
-   - 分析MSD的标度关系 (MSD ~ t^α)
-   - 判断扩散类型（正常/次/超扩散）
+10. **标度律分析**
+    - 点击"标度律分析"按钮
+    - 分析MSD的标度关系 (MSD ~ t^α)
+    - 判断扩散类型（正常/次/超扩散）
 
-10. **保存结果**
+11. **保存结果**
     - 点击"完成并保存"按钮
     - 选择保存目录
     - 自动生成Excel数据文件和PDF综合报告
@@ -212,7 +235,9 @@ python main.py
 ### 性能提示
 
 - 粒子数量>10或总计算量>100000时自动启用并行计算
+- 向量化计算使性能提升2-5倍
 - 并行计算利用多核CPU（保留2个核心给系统）
+- 异步计算确保界面不卡顿
 - 大数据集建议使用自动拟合模式
 
 ## 🚀 发布与打包

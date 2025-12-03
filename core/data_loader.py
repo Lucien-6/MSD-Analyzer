@@ -52,6 +52,13 @@ class DataLoader:
             'PID': 'particle_id',
             'pid': 'particle_id',
             'Particle': 'particle_id',
+            # TrackMate specific column names
+            'TRACK_ID': 'particle_id',
+            'POSITION_X': 'x',
+            'POSITION_Y': 'y',
+            'POSITION_Z': 'z',
+            'POSITION_T': 't',
+            'FRAME': 't',
         }
         
     def _apply_column_mapping(self, df):
@@ -73,6 +80,50 @@ class DataLoader:
                 mapped_df[standard_col] = mapped_df[custom_col]
                 
         return mapped_df
+    
+    def _detect_trackmate_format(self, file_path):
+        """
+        Detect if a CSV file is in TrackMate format and return the number of rows to skip.
+        
+        TrackMate CSV files typically have:
+        - Row 1: Column names (e.g., TRACK_ID, POSITION_X, QUALITY)
+        - Row 2: Descriptive names (e.g., Track ID, X, Quality)
+        - Row 3: Abbreviated names (e.g., Track ID, X, Quality)
+        - Row 4: Units (e.g., (pixel), (frame))
+        - Row 5+: Actual data
+        
+        Parameters:
+        file_path: Path to the CSV file
+        
+        Returns:
+        skiprows: List of row indices to skip (empty list if not TrackMate format)
+        """
+        try:
+            # Read first 5 lines to detect format
+            with open(file_path, 'r', encoding='utf-8') as f:
+                lines = [f.readline().strip() for _ in range(5)]
+        except UnicodeDecodeError:
+            # Try with different encoding
+            with open(file_path, 'r', encoding='latin-1') as f:
+                lines = [f.readline().strip() for _ in range(5)]
+        
+        # Check if first row contains TrackMate characteristic column names
+        trackmate_columns = ['TRACK_ID', 'POSITION_X', 'POSITION_Y', 'QUALITY']
+        first_row = lines[0].upper()
+        has_trackmate_columns = all(col in first_row for col in trackmate_columns)
+        
+        # Check if fourth row contains unit information (characteristic of TrackMate)
+        if len(lines) >= 4:
+            fourth_row = lines[3].lower()
+            has_units = '(pixel)' in fourth_row or '(frame)' in fourth_row or '(µm)' in fourth_row
+        else:
+            has_units = False
+        
+        # If both conditions are met, skip rows 2-4 (indices 1, 2, 3)
+        if has_trackmate_columns and has_units:
+            return [1, 2, 3]
+        
+        return []
         
     def load_excel(self, file_path):
         """
@@ -139,8 +190,11 @@ class DataLoader:
         trajectories: 字典，键为颗粒ID，值为包含轨迹数据的DataFrame
         dimension: 轨迹维度（2或3）
         """
+        # Detect TrackMate format and get rows to skip
+        skiprows = self._detect_trackmate_format(file_path)
+        
         # 读取CSV文件
-        df = pd.read_csv(file_path)
+        df = pd.read_csv(file_path, skiprows=skiprows)
         # 应用列名映射
         df = self._apply_column_mapping(df)
         

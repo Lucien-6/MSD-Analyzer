@@ -1,6 +1,11 @@
+import logging
 import numpy as np
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
+
+# 获取模块级日志记录器
+logger = logging.getLogger(__name__)
+
 
 class FittingAnalyzer:
         
@@ -36,7 +41,7 @@ class FittingAnalyzer:
             except Exception as e:
                 # 如果自动拟合失败，使用默认终止时间
                 end_time = min(start_time * 10, lag_time[-1])
-                print(f"自动拟合范围确定失败: {str(e)}，使用默认终止时间: {end_time}")
+                logger.warning(f"自动拟合范围确定失败: {str(e)}，使用默认终止时间: {end_time}")
         else:
             # 使用手动设置的终止时间
             end_time = fit_settings['end_time']
@@ -262,11 +267,11 @@ class FittingAnalyzer:
                     best_end_idx = end_idx
             except np.linalg.LinAlgError as e:
                 # 具体捕获线性代数错误，提供更明确的错误信息
-                print(f"拟合区间 [{start_idx}:{end_idx}] 线性拟合失败: {str(e)}")
+                logger.debug(f"拟合区间 [{start_idx}:{end_idx}] 线性拟合失败: {str(e)}")
                 continue
             except Exception as e:
                 # 捕获其他可能的错误
-                print(f"拟合区间 [{start_idx}:{end_idx}] 发生错误: {str(e)}")
+                logger.debug(f"拟合区间 [{start_idx}:{end_idx}] 发生错误: {str(e)}")
                 continue
         
         # 如果没有找到满足条件的区间，使用默认的终止索引
@@ -275,7 +280,7 @@ class FittingAnalyzer:
                 best_end_idx = start_idx + 5
             else:
                 best_end_idx = len(lag_times) - 1
-            print(f"未找到满足R²阈值 {r_squared_threshold} 的区间，使用默认终止索引: {best_end_idx}")
+            logger.warning(f"未找到满足R²阈值 {r_squared_threshold} 的区间，使用默认终止索引: {best_end_idx}")
             
         return lag_times[best_end_idx]
 
@@ -310,7 +315,7 @@ class FittingAnalyzer:
         # 确定终止时间 - 优先使用fitting_results中的终止时间
         if fitting_results and 'end_time' in fitting_results:
             end_time = fitting_results['end_time']
-            print(f"使用平均MSD拟合的终止时间: {end_time}")
+            logger.info(f"使用平均MSD拟合的终止时间: {end_time}")
         else:
             # 如果没有提供fitting_results，则使用原来的逻辑确定终止时间
             if fit_settings['auto_fit']:
@@ -325,7 +330,7 @@ class FittingAnalyzer:
                 except Exception as e:
                     # 如果自动拟合失败，使用默认终止时间
                     end_time = min(start_time * 10, lag_time[-1])
-                    print(f"自动拟合范围确定失败: {str(e)}，使用默认终止时间: {end_time}")
+                    logger.warning(f"自动拟合范围确定失败: {str(e)}，使用默认终止时间: {end_time}")
             else:
                 # 使用手动设置的终止时间
                 end_time = fit_settings['end_time']
