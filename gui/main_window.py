@@ -67,7 +67,7 @@ class MainWindow(QMainWindow):
     
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("MSD Analyzer V1.4 - by Lucien")
+        self.setWindowTitle("MSD Analyzer V1.6 - by Lucien")
         self.resize(1600, 1200)
 
         # 设置应用图标

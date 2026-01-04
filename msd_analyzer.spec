@@ -1,10 +1,13 @@
 # -*- mode: python ; coding: utf-8 -*-
+# MSD Analyzer V1.6 - PyInstaller Configuration
+# Author: Lucien
+# Date: 2026-01-04
 
 block_cipher = None
 
 a = Analysis(
     ['main.py'],
-    pathex=['E:\\Codes\\MSD Analyzer'],
+    pathex=['F:\\Codes\\MSD Analyzer'],
     binaries=[],
     datas=[],
     hiddenimports=[],
@@ -18,7 +21,7 @@ a = Analysis(
     noarchive=False,
 )
 
-# 排除测试数据生成脚本和测试数据文件夹
+# 排除测试数据文件夹（减小打包体积）
 a.datas = [x for x in a.datas if not x[0].startswith('test_data')]
 a.binaries = [x for x in a.binaries if not x[0].startswith('test_data')]
 
@@ -35,14 +38,15 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
-    upx_exclude=[],
-    runtime_tmpdir=None,  # 添加临时目录设置
-    console=False,  # 禁用控制台窗口，仅显示GUI界面
+    upx=True,         # 启用UPX压缩
+    upx_exclude=[],   # UPX排除列表
+    upx_dir='F:\\Codes\\UPX',  # UPX可执行文件路径
+    runtime_tmpdir=None,
+    console=False,    # 禁用控制台窗口，仅显示GUI界面
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='icon.ico',  # 添加应用图标
+    icon='icon.ico',  # 应用图标（V1.5）
 )

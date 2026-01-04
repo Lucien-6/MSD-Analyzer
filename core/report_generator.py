@@ -116,7 +116,7 @@ class ReportGenerator:
         plt.text(0.5, 0.5, settings_text, fontsize=12, ha='center', va='center')
         
         # Add footer
-        plt.text(0.5, 0.15, "Analysis Tool: MSD Analyzer V1.3", fontsize=14, ha='center')
+        plt.text(0.5, 0.15, "Analysis Tool: MSD Analyzer V1.6", fontsize=14, ha='center')
 
         # Add author
         plt.text(0.5, 0.01, "Author: Lucien\nContact: lucien-6@qq.com", fontsize=10, ha='center')
@@ -272,14 +272,22 @@ class ReportGenerator:
         # Add fitting parameters text
         model_type = settings.get('model_type', 'brownian')
         
-        if model_type == 'drift':
+        if model_type == 'active':
+            D_eff_conf = fitting_results.get('D_conf_interval', [0, 0])
+            tau_r_conf = fitting_results.get('tau_r_conf_interval', [0, 0])
+            
+            fit_text = f"$D_{{eff}}$ = {fitting_results['D']:.4e} [{D_eff_conf[0]:.4e}, {D_eff_conf[1]:.4e}] {settings['space_unit']}²/{settings['time_unit']}\n"
+            fit_text += f"$\\tau_r$ = {fitting_results.get('tau_r', 0):.4e} [{tau_r_conf[0]:.4e}, {tau_r_conf[1]:.4e}] {settings['time_unit']}\n"
+            fit_text += f"R² = {fitting_results['r_squared']:.4f}"
+            equation = f"$\\mathrm{{MSD}}(t) = {2*dimension}D_{{\\mathrm{{eff}}}}(t - \\tau_r(1 - e^{{-t/\\tau_r}}))$"
+        elif model_type == 'drift':
             D_conf = fitting_results.get('D_conf_interval', [0, 0])
             V_conf = fitting_results.get('V_conf_interval', [0, 0])
             
             fit_text = f"D = {fitting_results['D']:.4e} [{D_conf[0]:.4e}, {D_conf[1]:.4e}] {settings['space_unit']}²/{settings['time_unit']}\n"
             fit_text += f"V = {fitting_results.get('V', 0):.4e} [{V_conf[0]:.4e}, {V_conf[1]:.4e}] {settings['space_unit']}/{settings['time_unit']}\n"
             fit_text += f"R² = {fitting_results['r_squared']:.4f}"
-            equation = f"MSD(t) = {2*dimension}Dt + V²t²"
+            equation = f"$\\mathrm{{MSD}}(t) = {2*dimension}Dt + V^2t^2$"
         elif model_type == 'confined':
             D_conf = fitting_results.get('D_conf_interval', [0, 0])
             L_conf = fitting_results.get('L_conf_interval', [0, 0])
@@ -287,13 +295,13 @@ class ReportGenerator:
             fit_text = f"D = {fitting_results['D']:.4e} [{D_conf[0]:.4e}, {D_conf[1]:.4e}] {settings['space_unit']}²/{settings['time_unit']}\n"
             fit_text += f"L = {fitting_results.get('L', 0):.4e} [{L_conf[0]:.4e}, {L_conf[1]:.4e}] {settings['space_unit']}\n"
             fit_text += f"R² = {fitting_results['r_squared']:.4f}"
-            equation = "MSD(t) = L²(1 - exp(-4Dt/L²))"
+            equation = f"$\\mathrm{{MSD}}(t) = L^2(1 - e^{{-{2*dimension}Dt/L^2}})$"
         else:
             D_conf = fitting_results.get('D_conf_interval', [0, 0])
             
             fit_text = f"D = {fitting_results['D']:.4e} [{D_conf[0]:.4e}, {D_conf[1]:.4e}] {settings['space_unit']}²/{settings['time_unit']}\n"
             fit_text += f"R² = {fitting_results['r_squared']:.4f}"
-            equation = f"MSD(t) = {2*dimension}Dt"
+            equation = f"$\\mathrm{{MSD}}(t) = {2*dimension}Dt$"
         
         fit_text = format_special_chars(fit_text)
         equation = format_special_chars(equation)
@@ -452,6 +460,11 @@ class ReportGenerator:
             L_conf_str = f"[{L_conf[0]:.6e}, {L_conf[1]:.6e}]" if L_conf[0] > 0 else "N/A"
             fit_table_data.append(["Confinement Length (L)", f"{fitting_results.get('L', 0):.6e}", 
                                   L_conf_str, f"{settings['space_unit']}"])
+        elif model_type == 'active':
+            tau_r_conf = fitting_results.get('tau_r_conf_interval', [0, 0])
+            tau_r_conf_str = f"[{tau_r_conf[0]:.6e}, {tau_r_conf[1]:.6e}]" if tau_r_conf[0] > 0 else "N/A"
+            fit_table_data.append(["Reorientation Time (τ_r)", f"{fitting_results.get('tau_r', 0):.6e}", 
+                                  tau_r_conf_str, f"{settings['time_unit']}"])
         
         # Common parameters
         fit_table_data.append(["Goodness of Fit (R²)", f"{fitting_results['r_squared']:.6f}", "N/A", ""])

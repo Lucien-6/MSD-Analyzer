@@ -28,7 +28,8 @@ def export_results_to_excel(output_path, msd_results, fitting_results, scaling_r
         model_type_map = {
             'brownian': '简单扩散(纯布朗运动)',
             'drift': '定向扩散(漂移速度恒定)',
-            'confined': '受限扩散(圆内或球内)'
+            'confined': '受限扩散(圆内或球内)',
+            'active': '活性细菌扩散(Run-and-Tumble)'
         }
         model_name = model_type_map.get(settings['model_type'], settings['model_type'])
         # 导出设置信息
@@ -97,6 +98,15 @@ def export_results_to_excel(output_path, msd_results, fitting_results, scaling_r
             fit_data["值"].append(f"{fitting_results.get('L', 0):.6e}")
             fit_data["95%置信区间"].append(L_conf_str)
             fit_data["单位"].append(f"{settings['space_unit']}")
+        elif model_type == 'active':
+            # 活性细菌扩散模型
+            tau_r_conf = fitting_results.get('tau_r_conf_interval', [0, 0])
+            tau_r_conf_str = f"[{tau_r_conf[0]:.6e}, {tau_r_conf[1]:.6e}]" if 'tau_r_conf_interval' in fitting_results else "N/A"
+            
+            fit_data["参数"].append("重定向时间 (τ_r)")
+            fit_data["值"].append(f"{fitting_results.get('tau_r', 0):.6e}")
+            fit_data["95%置信区间"].append(tau_r_conf_str)
+            fit_data["单位"].append(f"{settings['time_unit']}")
         else:
             # 自由扩散模型
             pass

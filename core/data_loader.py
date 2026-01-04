@@ -65,6 +65,10 @@ class DataLoader:
         """
         应用列名映射到DataFrame
         
+        对于可能有多个源列映射到同一目标列的情况，使用优先级顺序:
+        - 时间列 't': POSITION_T > T > Time > FRAME
+        - 其他列按字典顺序
+        
         参数:
         df: 原始DataFrame
         
@@ -74,22 +78,76 @@ class DataLoader:
         # 创建一个新的DataFrame以避免修改原始数据
         mapped_df = df.copy()
         
-        # 应用列名映射
+        # 定义优先级映射（高优先级在前）
+        priority_mappings = {
+            't': ['POSITION_T', 'T', 'Time', 'time', 'Times', 'times', 'FRAME'],
+            'particle_id': ['TRACK_ID', 'ParticleID', 'Particle_ID', 
+                           'Particle_id', 'PID', 'ID', 'Particle', 
+                           'pid', 'id', 'particle_id'],
+        }
+        
+        # 先处理有优先级的映射
+        for standard_col, priority_list in priority_mappings.items():
+            if standard_col in mapped_df.columns:
+                continue  # 目标列已存在，跳过
+            for custom_col in priority_list:
+                if custom_col in mapped_df.columns:
+                    mapped_df[standard_col] = mapped_df[custom_col]
+                    break  # 找到第一个匹配的，停止查找
+        
+        # 再处理其他普通映射
         for custom_col, standard_col in self.column_mapping.items():
             if custom_col in mapped_df.columns and standard_col not in mapped_df.columns:
                 mapped_df[standard_col] = mapped_df[custom_col]
                 
         return mapped_df
     
+    def _clean_particle_id(self, particle_id):
+        """
+        清理颗粒ID，确保返回自然数（非负整数）字符串
+        
+        参数:
+        particle_id: 原始颗粒ID（可能是浮点数、字符串等）
+        
+        返回:
+        str: 清理后的整数字符串
+        """
+        try:
+            # 转换为浮点数（处理字符串输入）
+            id_float = float(particle_id)
+            
+            # 检查是否为NaN
+            if pd.isna(id_float):
+                return "0"
+            
+            # 转换为整数（向下取整）
+            id_int = int(id_float)
+            
+            # 确保是非负数
+            if id_int < 0:
+                id_int = abs(id_int)
+            
+            return str(id_int)
+        except (ValueError, TypeError):
+            # 无法转换的情况，返回字符串表示
+            return str(particle_id)
+    
     def _detect_trackmate_format(self, file_path):
         """
         Detect if a CSV file is in TrackMate format and return the number of rows to skip.
         
-        TrackMate CSV files typically have:
+        TrackMate CSV files can have two formats:
+        Format 1 (3-row header):
+        - Row 1: Column names (e.g., TRACK_ID, POSITION_X, QUALITY)
+        - Row 2: Descriptive names (e.g., Track ID, X, Quality)
+        - Row 3: Units (e.g., (?m), (sec), (quality))
+        - Row 4+: Actual data
+        
+        Format 2 (4-row header):
         - Row 1: Column names (e.g., TRACK_ID, POSITION_X, QUALITY)
         - Row 2: Descriptive names (e.g., Track ID, X, Quality)
         - Row 3: Abbreviated names (e.g., Track ID, X, Quality)
-        - Row 4: Units (e.g., (pixel), (frame))
+        - Row 4: Units (e.g., (pixel), (frame), (µm))
         - Row 5+: Actual data
         
         Parameters:
@@ -104,24 +162,42 @@ class DataLoader:
                 lines = [f.readline().strip() for _ in range(5)]
         except UnicodeDecodeError:
             # Try with different encoding
-            with open(file_path, 'r', encoding='latin-1') as f:
-                lines = [f.readline().strip() for _ in range(5)]
+            try:
+                with open(file_path, 'r', encoding='utf-8-sig') as f:
+                    lines = [f.readline().strip() for _ in range(5)]
+            except UnicodeDecodeError:
+                with open(file_path, 'r', encoding='latin-1') as f:
+                    lines = [f.readline().strip() for _ in range(5)]
         
         # Check if first row contains TrackMate characteristic column names
         trackmate_columns = ['TRACK_ID', 'POSITION_X', 'POSITION_Y', 'QUALITY']
         first_row = lines[0].upper()
         has_trackmate_columns = all(col in first_row for col in trackmate_columns)
         
-        # Check if fourth row contains unit information (characteristic of TrackMate)
+        if not has_trackmate_columns:
+            return []
+        
+        # Extended unit markers to detect TrackMate format
+        unit_markers = [
+            '(pixel)', '(frame)', '(µm)', '(?m)', 
+            '(sec)', '(quality)', '(counts)', '(radians)'
+        ]
+        
+        # Check third row (index 2) for units (Format 1: 3-row header)
+        if len(lines) >= 3:
+            third_row = lines[2].lower()
+            has_units_row3 = any(marker in third_row for marker in unit_markers)
+            if has_units_row3:
+                # Format 1: Skip rows 2-3 (indices 1, 2)
+                return [1, 2]
+        
+        # Check fourth row (index 3) for units (Format 2: 4-row header)
         if len(lines) >= 4:
             fourth_row = lines[3].lower()
-            has_units = '(pixel)' in fourth_row or '(frame)' in fourth_row or '(µm)' in fourth_row
-        else:
-            has_units = False
-        
-        # If both conditions are met, skip rows 2-4 (indices 1, 2, 3)
-        if has_trackmate_columns and has_units:
-            return [1, 2, 3]
+            has_units_row4 = any(marker in fourth_row for marker in unit_markers)
+            if has_units_row4:
+                # Format 2: Skip rows 2-4 (indices 1, 2, 3)
+                return [1, 2, 3]
         
         return []
         
@@ -153,8 +229,23 @@ class DataLoader:
             raise ValueError("数据必须包含't'列表示时间（或通过列名映射提供）")
             
         if 'x' in first_sheet.columns and 'y' in first_sheet.columns and 'z' in first_sheet.columns:
-            dimension = 3
-            required_columns = ['t', 'x', 'y', 'z']
+            # 检查Z列是否全为0或NaN（表示实际是2D数据）
+            z_values = pd.to_numeric(first_sheet['z'], errors='coerce')
+            if z_values.notna().any():  # 如果有非NaN值
+                # 检查所有非NaN值是否都为0
+                non_nan_z = z_values.dropna()
+                if len(non_nan_z) > 0 and (non_nan_z == 0).all():
+                    # Z列全为0，视为2D数据
+                    dimension = 2
+                    required_columns = ['t', 'x', 'y']
+                else:
+                    # Z列有非零值，是真正的3D数据
+                    dimension = 3
+                    required_columns = ['t', 'x', 'y', 'z']
+            else:
+                # Z列全为NaN，视为2D数据
+                dimension = 2
+                required_columns = ['t', 'x', 'y']
         elif 'x' in first_sheet.columns and 'y' in first_sheet.columns:
             dimension = 2
             required_columns = ['t', 'x', 'y']
@@ -194,7 +285,7 @@ class DataLoader:
         skiprows = self._detect_trackmate_format(file_path)
         
         # 读取CSV文件
-        df = pd.read_csv(file_path, skiprows=skiprows)
+        df = pd.read_csv(file_path, skiprows=skiprows, low_memory=False)
         # 应用列名映射
         df = self._apply_column_mapping(df)
         
@@ -203,8 +294,23 @@ class DataLoader:
             raise ValueError("数据必须包含't'列表示时间（或通过列名映射提供）")
             
         if 'x' in df.columns and 'y' in df.columns and 'z' in df.columns:
-            dimension = 3
-            required_columns = ['t', 'x', 'y', 'z']
+            # 检查Z列是否全为0或NaN（表示实际是2D数据）
+            z_values = pd.to_numeric(df['z'], errors='coerce')
+            if z_values.notna().any():  # 如果有非NaN值
+                # 检查所有非NaN值是否都为0
+                non_nan_z = z_values.dropna()
+                if len(non_nan_z) > 0 and (non_nan_z == 0).all():
+                    # Z列全为0，视为2D数据
+                    dimension = 2
+                    required_columns = ['t', 'x', 'y']
+                else:
+                    # Z列有非零值，是真正的3D数据
+                    dimension = 3
+                    required_columns = ['t', 'x', 'y', 'z']
+            else:
+                # Z列全为NaN，视为2D数据
+                dimension = 2
+                required_columns = ['t', 'x', 'y']
         elif 'x' in df.columns and 'y' in df.columns:
             dimension = 2
             required_columns = ['t', 'x', 'y']
@@ -226,10 +332,19 @@ class DataLoader:
             # 按粒子ID分组
             trajectories = {}
             for particle_id, group in df.groupby(particle_id_col):
-                trajectories[str(particle_id)] = group[required_columns]
+                # 清理颗粒ID为整数字符串
+                clean_id = self._clean_particle_id(particle_id)
+                
+                # 提取所需列并按时间排序
+                track_data = group[required_columns].copy()
+                track_data = track_data.sort_values(by='t').reset_index(drop=True)
+                
+                trajectories[clean_id] = track_data
         else:
             # 如果没有粒子ID列，则将所有数据视为单个粒子
-            trajectories = {'1': df[required_columns]}
+            track_data = df[required_columns].copy()
+            track_data = track_data.sort_values(by='t').reset_index(drop=True)
+            trajectories = {'1': track_data}
             
         return trajectories, dimension
     

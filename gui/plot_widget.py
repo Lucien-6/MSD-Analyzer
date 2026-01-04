@@ -434,7 +434,17 @@ class PlotWidget(QWidget):
             fit_text = f"D = {D:.4e} ± {D_err:.4e} {fit_settings['space_unit']}²/{fit_settings['time_unit']}\n"
             fit_text += f"L = {L:.4f} ± {L_err:.4e} {fit_settings['space_unit']}\n"
             fit_text += f"R² = {r_squared:.4f}"
-            equation = format_special_chars(f"MSD(t) = L²(1-e^(-{2*dimension}Dt/L²))")
+            equation = f"$\\mathrm{{MSD}}(t) = L^2(1-e^{{-{2*dimension}Dt/L^2}})$"
+        elif model_type == 'active':
+            D_eff = fitting_results['D']
+            D_eff_err = fitting_results['D_err']
+            tau_r = fitting_results['tau_r']
+            tau_r_err = fitting_results['tau_r_err']
+            r_squared = fitting_results['r_squared']
+            fit_text = f"$D_{{eff}}$ = {D_eff:.4e} ± {D_eff_err:.4e} {fit_settings['space_unit']}²/{fit_settings['time_unit']}\n"
+            fit_text += f"$\\tau_r$ = {tau_r:.4e} ± {tau_r_err:.4e} {fit_settings['time_unit']}\n"
+            fit_text += f"R² = {r_squared:.4f}"
+            equation = f"$\\mathrm{{MSD}}(t) = {2*dimension}D_{{\\mathrm{{eff}}}}(t-\\tau_r(1-e^{{-t/\\tau_r}}))$"
         elif model_type == 'drift':
             D = fitting_results['D']
             D_err = fitting_results['D_err']
@@ -444,14 +454,14 @@ class PlotWidget(QWidget):
             fit_text = f"D = {D:.4e} ± {D_err:.4e} {fit_settings['space_unit']}²/{fit_settings['time_unit']}\n"
             fit_text += f"V = {V:.4e} ± {V_err:.4e} {fit_settings['space_unit']}/{fit_settings['time_unit']}\n"
             fit_text += f"R² = {r_squared:.4f}"
-            equation = format_special_chars(f"MSD(t) = {2*dimension}Dt + V²t²")
+            equation = f"$\\mathrm{{MSD}}(t) = {2*dimension}Dt + V^2t^2$"
         else:  # brownian
             D = fitting_results['D']
             D_err = fitting_results['D_err']
             r_squared = fitting_results['r_squared']
             fit_text = f"D = {D:.4e} ± {D_err:.4e} {fit_settings['space_unit']}²/{fit_settings['time_unit']}\n"
             fit_text += f"R² = {r_squared:.4f}"
-            equation = format_special_chars(f"MSD(t) = {2*dimension}Dt")
+            equation = f"$\\mathrm{{MSD}}(t) = {2*dimension}Dt$"
 
         fit_text = format_special_chars(fit_text)
         fit_text = superscript_alpha(fit_text)

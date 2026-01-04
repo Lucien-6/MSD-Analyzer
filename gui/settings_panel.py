@@ -49,6 +49,7 @@ class SettingsPanel(QWidget):
         self.model_combo.addItem("简单扩散(纯布朗运动)", "brownian")
         self.model_combo.addItem("定向扩散(漂移速度恒定)", "drift")
         self.model_combo.addItem("受限扩散(圆内或球内)", "confined")
+        self.model_combo.addItem("活性细菌扩散(Run-and-Tumble)", "active")
         self.model_combo.setCurrentIndex(0)
         self.model_combo.currentIndexChanged.connect(self._update_fit_controls)
         

@@ -1,8 +1,8 @@
-# MSD Analyzer V1.4
+# MSD Analyzer V1.6
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
-[![Version](https://img.shields.io/badge/version-1.4-brightgreen.svg)](https://github.com/Lucien-6/MSD-Analyzer/releases)
+[![Version](https://img.shields.io/badge/version-1.6-brightgreen.svg)](https://github.com/Lucien-6/MSD-Analyzer/releases)
 
 MSD Analyzer 是一款专业的均方位移 (Mean Squared Displacement, MSD) 分析桌面应用程序。它提供了友好的图形用户界面，支持2D/3D粒子轨迹数据的导入、处理、可视化，并提供多种物理模型拟合与参数提取功能，适用于布朗运动、扩散过程和微观粒子动力学研究。
 
@@ -22,10 +22,17 @@ MSD Analyzer 是一款专业的均方位移 (Mean Squared Displacement, MSD) 分
 
 ### 数据导入与处理
 - **多格式支持**: 支持从 Excel (.xlsx, .xls) 和 CSV (.csv) 格式导入轨迹数据
-- **🆕 TrackMate 兼容**: 原生支持 ImageJ/Fiji TrackMate 插件导出的 CSV 数据格式，自动识别并解析
-- **灵活的列名映射**: 自动识别多种列名格式（T/Time/times, X/Position_X/Center_X, POSITION_X/POSITION_T 等）
-- **2D/3D轨迹支持**: 自动检测并处理二维或三维粒子运动轨迹
+- **✨ TrackMate 完整兼容 (V1.5-1.6优化)**: 
+  * 原生支持 ImageJ/Fiji TrackMate 插件导出的 CSV 数据格式
+  * 自动识别3行/4行头部格式，智能跳过元数据行
+  * 时间列优先级映射（POSITION_T > T > FRAME），确保数据准确性
+  * Z列智能检测：全为0时自动识别为2D数据
+  * 颗粒ID规范化：浮点数自动转换为整数字符串
+  * 轨迹自动排序：按时间从小到大排序，确保数据连续性
+- **灵活的列名映射**: 自动识别多种列名格式（T/Time/times, X/Position_X/Center_X, POSITION_X/POSITION_T, TRACK_ID 等）
+- **智能维度识别**: 自动检测2D/3D数据，Z列全为0时智能降维为2D
 - **多粒子管理**: 支持同时加载和分析多个粒子的轨迹数据
+- **数据质量优化**: 自动清理、排序、规范化处理，确保数据完整性
 - **粒子筛选**: 可选择性排除特定粒子，灵活控制分析范围
 
 ### MSD计算与分析
@@ -41,6 +48,10 @@ MSD Analyzer 是一款专业的均方位移 (Mean Squared Displacement, MSD) 分
 - **简单扩散模型**: 适用于纯布朗运动 (MSD = 2dDt)
 - **定向扩散模型**: 适用于有定向漂移的运动 (MSD = 2dDt + V²t²)
 - **受限扩散模型**: 适用于受限空间内的扩散 (MSD = L²(1-exp(-2dDt/L²)))
+- **🆕 活性细菌扩散模型 (V1.6)**: 适用于Run-and-Tumble运动 (MSD = 2dD_eff(t - τ_r(1-e^(-t/τ_r))))
+  * 细菌游动、活性胶体、微生物运动分析
+  * 提取有效扩散系数D_eff和重定向时间τ_r
+- **专业LaTeX公式显示 (V1.6)**: 所有模型公式使用期刊级LaTeX格式，正确显示上标、下标和数学符号
 - **自动拟合模式**: 通过RDC分析自动确定最佳拟合区间
 - **手动拟合模式**: 用户自定义拟合时间范围
 - **置信区间计算**: 提供所有拟合参数的95%置信区间
@@ -179,16 +190,23 @@ python main.py
    - **必需列**: T(时间), X, Y (2D) 或 T, X, Y, Z (3D)
    - **列名灵活**: 支持多种列名格式，如Time/times/T, Position_X/Center_X/X, POSITION_X/POSITION_T等
 
-4. **🆕 TrackMate 数据导入（可选）**
+4. **✨ TrackMate 数据导入（推荐）**
    - 在 ImageJ/Fiji 中使用 TrackMate 完成粒子追踪
    - 选择 "Analysis" → "Spots in tracks statistics" → "Export to CSV"
    - 在 MSD Analyzer 中直接加载导出的 CSV 文件
-   - 程序自动识别 TrackMate 格式，无需手动预处理
+   - **V1.5-1.6 智能处理**：
+     * 自动识别格式并跳过元数据行
+     * 优先使用 POSITION_T 作为时间，TRACK_ID 作为颗粒ID
+     * 自动将颗粒ID转换为整数（如 0.0 → "0"）
+     * 自动按时间排序每条轨迹
+     * Z列全为0时自动识别为2D数据
+   - **无需任何预处理，开箱即用！**
 
 5. **选择扩散模型**
    - **简单扩散**: 纯布朗运动
    - **定向扩散**: 有恒定漂移速度的运动
    - **受限扩散**: 在有限空间内的扩散
+   - **🆕 活性细菌扩散 (V1.6)**: Run-and-Tumble运动（细菌、活性胶体等）
 
 6. **配置拟合参数**
    - **自动拟合**: 程序自动寻找最佳拟合区间（推荐）
@@ -207,8 +225,9 @@ python main.py
 
 9. **拟合分析**
    - 点击"拟合MSD"按钮进行模型拟合
-   - 查看扩散系数D、漂移速度V或约束长度L等参数
+   - 查看扩散系数D、漂移速度V、约束长度L或重定向时间τ_r等参数
    - 所有参数都提供95%置信区间
+   - 🆕 LaTeX格式显示：所有公式和参数使用专业数学排版
 
 10. **标度律分析**
     - 点击"标度律分析"按钮

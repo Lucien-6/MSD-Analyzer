@@ -195,6 +195,61 @@ class FittingAnalyzer:
                     'start_time': start_time,
                     'end_time': end_time
                 }
+                
+            elif model_type == 'active':
+                # 活性细菌扩散模型 (Run-and-Tumble): MSD = 2*d*D_eff*(t - tau_r*(1 - exp(-t/tau_r)))
+                # 其中D_eff是有效扩散系数，tau_r是重定向时间
+                def active_model(t, D_eff, tau_r):
+                    return 2 * dimension * D_eff * (t - tau_r * (1 - np.exp(-t / tau_r)))
+                
+                # 初始猜测值：D_eff从长时斜率估计，tau_r为拟合时间范围的1/10
+                D_eff_init = np.max(fit_msd) / (2 * dimension * fit_lag_time[-1])
+                tau_r_init = fit_lag_time[-1] / 10
+                p0 = [D_eff_init, tau_r_init]
+                
+                popt, pcov = curve_fit(
+                    active_model,
+                    fit_lag_time, fit_msd, p0=p0, bounds=(0, np.inf)
+                )
+                D_eff, tau_r = popt
+                
+                # 计算95%置信区间
+                perr = np.sqrt(np.diag(pcov))
+                D_eff_err, tau_r_err = perr
+                D_eff_conf_interval = [D_eff - 1.96 * D_eff_err, D_eff + 1.96 * D_eff_err]
+                tau_r_conf_interval = [tau_r - 1.96 * tau_r_err, tau_r + 1.96 * tau_r_err]
+                
+                # 计算拟合曲线
+                fit_times = np.linspace(0, end_time * 1.2, 100)
+                fit_msd_values = active_model(fit_times, D_eff, tau_r)
+                
+                # 计算R^2
+                residuals = fit_msd - active_model(fit_lag_time, D_eff, tau_r)
+                ss_res = np.sum(residuals**2)
+                ss_tot = np.sum((fit_msd - np.mean(fit_msd))**2)
+                r_squared = 1 - (ss_res / ss_tot) if ss_tot != 0 else 0
+                
+                # 整理结果
+                fitting_results = {
+                    'model': 'active',
+                    'D': D_eff,
+                    'D_err': D_eff_err,
+                    'D_conf_interval': D_eff_conf_interval,
+                    'tau_r': tau_r,
+                    'tau_r_err': tau_r_err,
+                    'tau_r_conf_interval': tau_r_conf_interval,
+                    'V': None,
+                    'V_err': None,
+                    'V_conf_interval': None,
+                    'L': None,
+                    'L_err': None,
+                    'L_conf_interval': None,
+                    'r_squared': r_squared,
+                    'fit_times': fit_times,
+                    'fit_msd': fit_msd_values,
+                    'start_time': start_time,
+                    'end_time': end_time
+                }
             else:
                 raise ValueError(f"未知的拟合模型类型: {model_type}")
                 
